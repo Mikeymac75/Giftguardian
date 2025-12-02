@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <!-- Upcoming Birthdays -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-dark">
+                <h5 class="card-title mb-0"><i class="bi bi-cake2-fill"></i> Upcoming Birthdays</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for person in upcoming_birthdays %}
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ person.name }}</h5>
+                        <small>{{ person.birthday_month }}/{{ person.birthday_day }}</small>
+                    </div>
+                    <p class="mb-1 text-muted">{{ person.relation.name if person.relation else 'Relation N/A' }}</p>
+                    <small>
+                        {% if person.days_until == 0 %}
+                        <span class="badge bg-danger">Today!</span>
+                        {% elif person.days_until == 1 %}
+                        <span class="badge bg-warning text-dark">Tomorrow</span>
+                        {% else %}
+                        In {{ person.days_until }} days
+                        {% endif %}
+                    </small>
+                </div>
+                {% else %}
+                <div class="list-group-item text-muted">No upcoming birthdays found.</div>
+                {% endfor %}
+            </div>
+             <div class="card-footer text-center">
+                 <a href="{{ url_for('main.people_list') }}" class="btn btn-sm btn-outline-secondary">View All People</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Gift Ideas -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0"><i class="bi bi-lightbulb-fill"></i> Recent Ideas</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for gift in recent_gifts %}
+                <a href="{{ url_for('main.edit_gift', id=gift.id) }}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ gift.item_name }}</h5>
+                        <small>${{ "%.2f"|format(gift.price|default(0, true)) }}</small>
+                    </div>
+                    <p class="mb-1">For: {{ gift.person.name }}</p>
+                    <small class="text-muted">Added: {{ gift.status }}</small>
+                </a>
+                {% else %}
+                 <div class="list-group-item text-muted">No gift ideas yet.</div>
+                {% endfor %}
+            </div>
+             <div class="card-footer text-center">
+                 <a href="{{ url_for('main.gifts_list') }}" class="btn btn-sm btn-outline-secondary">View All Gifts</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
