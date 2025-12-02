@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Edit Person</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('main.edit_person', id=person.id) }}" method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" name="name" value="{{ person.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="relation_id" class="form-label">Relation</label>
+                        <select class="form-select" name="relation_id" required>
+                            {% for relation in relations %}
+                                <option value="{{ relation.id }}" {% if person.relation_id == relation.id %}selected{% endif %}>{{ relation.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="month" class="form-label">Month</label>
+                            <select class="form-select" name="month" required>
+                                {% for m in range(1, 13) %}
+                                <option value="{{ m }}" {% if person.birthday_month == m %}selected{% endif %}>{{ m }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="day" class="form-label">Day</label>
+                            <select class="form-select" name="day" required>
+                                {% for d in range(1, 32) %}
+                                <option value="{{ d }}" {% if person.birthday_day == d %}selected{% endif %}>{{ d }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="year" class="form-label">Year (Optional)</label>
+                            <input type="number" class="form-control" name="year" placeholder="YYYY" min="1900" max="2100" value="{{ person.birthday_year or '' }}">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                         <a href="{{ url_for('main.people_list') }}" class="btn btn-secondary">Cancel</a>
+                         <button type="submit" class="btn btn-primary">Update Person</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

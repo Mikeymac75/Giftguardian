@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <!-- Relations Management -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="card-title mb-0">Manage Relations</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('main.add_relation') }}" method="POST" class="row g-3 mb-3">
+                    <div class="col-auto">
+                        <input type="text" class="form-control" name="name" placeholder="New Relation (e.g. Spouse)" required>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </div>
+                </form>
+                <ul class="list-group">
+                    {% for relation in relations %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ relation.name }}
+                        <form action="{{ url_for('main.delete_relation', id=relation.id) }}" method="POST" style="display:inline;">
+                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted">No relations defined yet.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Occasions Management -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="card-title mb-0">Manage Occasions</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('main.add_occasion') }}" method="POST" class="row g-3 mb-3">
+                    <div class="col-auto">
+                        <input type="text" class="form-control" name="name" placeholder="New Occasion (e.g. Birthday)" required>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </div>
+                </form>
+                <ul class="list-group">
+                    {% for occasion in occasions %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ occasion.name }}
+                        <form action="{{ url_for('main.delete_occasion', id=occasion.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted">No occasions defined yet.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

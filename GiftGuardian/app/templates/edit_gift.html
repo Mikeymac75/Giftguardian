@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Edit Gift</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('main.edit_gift', id=gift.id) }}" method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="item_name" class="form-label">Item Name</label>
+                        <input type="text" class="form-control" name="item_name" value="{{ gift.item_name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="person_id" class="form-label">For Who?</label>
+                        <select class="form-select" name="person_id" required>
+                            {% for person in people %}
+                                <option value="{{ person.id }}" {% if gift.person_id == person.id %}selected{% endif %}>{{ person.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="occasion_id" class="form-label">Occasion</label>
+                        <select class="form-select" name="occasion_id">
+                            <option value="">None / General</option>
+                            {% for occasion in occasions %}
+                                <option value="{{ occasion.id }}" {% if gift.occasion_id == occasion.id %}selected{% endif %}>{{ occasion.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                             <label for="price" class="form-label">Price ($)</label>
+                             <input type="number" step="0.01" class="form-control" name="price" value="{{ gift.price }}" placeholder="0.00">
+                        </div>
+                         <div class="col-md-6 mb-3">
+                             <label for="year" class="form-label">Year</label>
+                             <input type="number" class="form-control" name="year" value="{{ gift.year }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" name="status" required>
+                            <option value="Idea" {% if gift.status == 'Idea' %}selected{% endif %}>Idea</option>
+                            <option value="Bought" {% if gift.status == 'Bought' %}selected{% endif %}>Bought</option>
+                            <option value="Given" {% if gift.status == 'Given' %}selected{% endif %}>Given</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Update Image</label>
+                        {% if gift.image_path %}
+                            <div class="mb-2">
+                                <img src="{{ url_for('main.uploaded_file', filename=gift.image_path) }}" alt="Current Image" style="height: 100px;">
+                            </div>
+                        {% endif %}
+                        <input type="file" class="form-control" name="image" accept="image/*">
+                    </div>
+                    <div class="d-flex justify-content-between">
+                         <a href="{{ url_for('main.gifts_list') }}" class="btn btn-secondary">Cancel</a>
+                         <button type="submit" class="btn btn-primary">Update Gift</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

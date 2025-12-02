@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <h2>Gifts</h2>
+    </div>
+    <div class="col text-end">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGiftModal">
+            <i class="bi bi-gift-fill"></i> Add Gift
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    {% for gift in gifts %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            {% if gift.image_path %}
+            <img src="{{ url_for('main.uploaded_file', filename=gift.image_path) }}" class="card-img-top" alt="{{ gift.item_name }}" style="height: 200px; object-fit: cover;">
+            {% else %}
+            <div class="bg-secondary text-white d-flex justify-content-center align-items-center" style="height: 200px;">
+                <i class="bi bi-gift" style="font-size: 3rem;"></i>
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ gift.item_name }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">
+                    For: {{ gift.person.name }}
+                </h6>
+                <p class="card-text">
+                    <strong>Price:</strong> ${{ "%.2f"|format(gift.price|default(0, true)) }}<br>
+                    <strong>Occasion:</strong> {{ gift.occasion.name if gift.occasion else 'None' }}<br>
+                    <strong>Year:</strong> {{ gift.year if gift.year else 'N/A' }}<br>
+                    <strong>Status:</strong>
+                    {% if gift.status == 'Idea' %}
+                        <span class="badge bg-info">Idea</span>
+                    {% elif gift.status == 'Bought' %}
+                        <span class="badge bg-warning text-dark">Bought</span>
+                    {% elif gift.status == 'Given' %}
+                        <span class="badge bg-success">Given</span>
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('main.edit_gift', id=gift.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <form action="{{ url_for('main.delete_gift', id=gift.id) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this gift?')">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col">
+        <p class="text-muted">No gifts tracked yet.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Add Gift Modal -->
+<div class="modal fade" id="addGiftModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Gift</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('main.add_gift') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="item_name" class="form-label">Item Name</label>
+                        <input type="text" class="form-control" name="item_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="person_id" class="form-label">For Who?</label>
+                        <select class="form-select" name="person_id" required>
+                            <option value="" selected disabled>Choose Person...</option>
+                            {% for person in people %}
+                                <option value="{{ person.id }}">{{ person.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="occasion_id" class="form-label">Occasion</label>
+                        <select class="form-select" name="occasion_id">
+                            <option value="">None / General</option>
+                            {% for occasion in occasions %}
+                                <option value="{{ occasion.id }}">{{ occasion.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                             <label for="price" class="form-label">Price ($)</label>
+                             <input type="number" step="0.01" class="form-control" name="price" placeholder="0.00">
+                        </div>
+                         <div class="col-md-6 mb-3">
+                             <label for="year" class="form-label">Year</label>
+                             <input type="number" class="form-control" name="year" value="{{ current_year }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" name="status" required>
+                            <option value="Idea">Idea</option>
+                            <option value="Bought">Bought</option>
+                            <option value="Given">Given</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Image</label>
+                        <input type="file" class="form-control" name="image" accept="image/*">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Gift</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
