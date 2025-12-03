@@ -42,7 +42,4 @@ def create_app(test_config=None):
         from .routes import main
         app.register_blueprint(main)
 
-    from .middleware import IngressMiddleware
-    app.wsgi_app = IngressMiddleware(app.wsgi_app)
-
     return app
