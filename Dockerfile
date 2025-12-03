@@ -1,11 +1,11 @@
-ARG BUILD_FROM
-FROM $BUILD_FROM
+FROM python:3.9-slim
 
-# Install requirements for add-on
-RUN \
-  apk add --no-cache \
-    python3 \
-    py3-pip
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libjpeg-dev \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy data for add-on
 COPY run.sh /
