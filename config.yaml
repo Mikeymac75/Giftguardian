@@ -21,4 +21,3 @@ schema: {}
 ingress: true
 ingress_port: 5000
 panel_icon: mdi:gift
-image: "python:3.9-slim"
