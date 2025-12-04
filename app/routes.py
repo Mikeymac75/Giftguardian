@@ -3,7 +3,7 @@ import datetime
 from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory
 from . import db
-from .models import Relation, Occasion, Person, Gift
+from .models import Relation, Occasion, Person, Gift, PersonOccasion
 
 main = Blueprint('main', __name__)
 
@@ -18,11 +18,12 @@ def uploaded_file(filename):
 
 @main.route('/')
 def index():
-    # Logic for upcoming birthdays
+    # Logic for upcoming birthdays and occasions
     today = datetime.date.today()
     people = Person.query.all()
-    upcoming_birthdays = []
+    upcoming_events = []
 
+    # Process Birthdays
     for person in people:
         # Determine next birthday date
         try:
@@ -36,24 +37,53 @@ def index():
                 bday_next_year = datetime.date(today.year + 1, person.birthday_month, person.birthday_day)
             except ValueError:
                 bday_next_year = datetime.date(today.year + 1, 3, 1)
-            next_bday = bday_next_year
+            next_date = bday_next_year
         else:
-            next_bday = bday_this_year
+            next_date = bday_this_year
 
-        days_until = (next_bday - today).days
+        days_until = (next_date - today).days
 
-        # Only show birthdays within the next 60 days (optional filter, but good for "Upcoming")
-        # Or just show top 5 sorted by days_until
-        person.days_until = days_until
-        upcoming_birthdays.append(person)
+        upcoming_events.append({
+            'name': f"{person.name}'s Birthday",
+            'date': next_date,
+            'days_until': days_until,
+            'type': 'Birthday',
+            'person': person
+        })
 
-    # Sort by days until birthday
-    upcoming_birthdays.sort(key=lambda x: x.days_until)
+        # Process Other Occasions
+        for occ in person.occasions:
+            try:
+                occ_this_year = datetime.date(today.year, occ.month, occ.day)
+            except ValueError:
+                 occ_this_year = datetime.date(today.year, 3, 1)
+
+            if occ_this_year < today:
+                try:
+                    occ_next_year = datetime.date(today.year + 1, occ.month, occ.day)
+                except ValueError:
+                    occ_next_year = datetime.date(today.year + 1, 3, 1)
+                next_occ_date = occ_next_year
+            else:
+                next_occ_date = occ_this_year
+
+            occ_days_until = (next_occ_date - today).days
+
+            upcoming_events.append({
+                'name': f"{person.name}'s {occ.occasion.name}",
+                'date': next_occ_date,
+                'days_until': occ_days_until,
+                'type': 'Occasion',
+                'person': person
+            })
+
+    # Sort by days until
+    upcoming_events.sort(key=lambda x: x['days_until'])
 
     # Get recent gifts (just the last 5 added)
     recent_gifts = Gift.query.order_by(Gift.id.desc()).limit(5).all()
 
-    return render_template('dashboard.html', upcoming_birthdays=upcoming_birthdays[:5], recent_gifts=recent_gifts)
+    return render_template('dashboard.html', upcoming_birthdays=upcoming_events[:5], recent_gifts=recent_gifts)
 
 @main.route('/settings')
 def settings():
@@ -136,6 +166,50 @@ def add_person():
         flash('Missing required fields.', 'warning')
 
     return redirect(url_for('main.people_list'))
+
+@main.route('/people/view/<int:id>')
+def person_profile(id):
+    person = Person.query.get_or_404(id)
+    occasions = Occasion.query.all()
+    return render_template('person_profile.html', person=person, occasions=occasions)
+
+@main.route('/people/<int:id>/occasion/add', methods=['POST'])
+def add_person_occasion(id):
+    person = Person.query.get_or_404(id)
+    occasion_id = request.form.get('occasion_id')
+    month = request.form.get('month')
+    day = request.form.get('day')
+    year = request.form.get('year')
+
+    if occasion_id and month and day:
+        try:
+            year_val = int(year) if year else None
+            new_occ = PersonOccasion(
+                person_id=person.id,
+                occasion_id=int(occasion_id),
+                month=int(month),
+                day=int(day),
+                year=year_val
+            )
+            db.session.add(new_occ)
+            db.session.commit()
+            flash('Occasion added!', 'success')
+        except ValueError:
+            flash('Invalid date or data.', 'danger')
+    else:
+        flash('Missing fields.', 'warning')
+
+    return redirect(url_for('main.person_profile', id=person.id))
+
+@main.route('/people/occasion/delete/<int:id>', methods=['POST'])
+def delete_person_occasion(id):
+    occ = PersonOccasion.query.get_or_404(id)
+    person_id = occ.person_id
+    db.session.delete(occ)
+    db.session.commit()
+    flash('Occasion removed.', 'success')
+    return redirect(url_for('main.person_profile', id=person_id))
+
 
 @main.route('/people/edit/<int:id>', methods=['GET', 'POST'])
 def edit_person(id):
