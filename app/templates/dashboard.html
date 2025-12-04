@@ -6,28 +6,28 @@
     <div class="col-md-6 mb-4">
         <div class="card h-100">
             <div class="card-header bg-info text-dark">
-                <h5 class="card-title mb-0"><i class="bi bi-cake2-fill"></i> Upcoming Birthdays</h5>
+                <h5 class="card-title mb-0"><i class="bi bi-calendar-event-fill"></i> Upcoming Events</h5>
             </div>
             <div class="list-group list-group-flush">
-                {% for person in upcoming_birthdays %}
+                {% for event in upcoming_birthdays %}
                 <div class="list-group-item">
                     <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">{{ person.name }}</h5>
-                        <small>{{ person.birthday_month }}/{{ person.birthday_day }}</small>
+                        <h5 class="mb-1">{{ event.name }}</h5>
+                        <small>{{ event.date.month }}/{{ event.date.day }}</small>
                     </div>
-                    <p class="mb-1 text-muted">{{ person.relation.name if person.relation else 'Relation N/A' }}</p>
+                    <p class="mb-1 text-muted">{{ event.person.relation.name if event.person.relation else 'Relation N/A' }}</p>
                     <small>
-                        {% if person.days_until == 0 %}
+                        {% if event.days_until == 0 %}
                         <span class="badge bg-danger">Today!</span>
-                        {% elif person.days_until == 1 %}
+                        {% elif event.days_until == 1 %}
                         <span class="badge bg-warning text-dark">Tomorrow</span>
                         {% else %}
-                        In {{ person.days_until }} days
+                        In {{ event.days_until }} days
                         {% endif %}
                     </small>
                 </div>
                 {% else %}
-                <div class="list-group-item text-muted">No upcoming birthdays found.</div>
+                <div class="list-group-item text-muted">No upcoming events found.</div>
                 {% endfor %}
             </div>
              <div class="card-footer text-center">

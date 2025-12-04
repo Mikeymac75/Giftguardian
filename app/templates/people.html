@@ -30,6 +30,7 @@
                     {{ person.birthday_month }}/{{ person.birthday_day }}
                     {% if person.birthday_year %}/{{ person.birthday_year }}{% endif %}
                 </p>
+                <a href="{{ url_for('main.person_profile', id=person.id) }}" class="btn btn-sm btn-info text-white">View Profile</a>
                 <a href="{{ url_for('main.edit_person', id=person.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                 <form action="{{ url_for('main.delete_person', id=person.id) }}" method="POST" style="display:inline;">
                     <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete {{ person.name }}?')">Delete</button>
