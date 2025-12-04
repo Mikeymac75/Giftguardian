@@ -2,13 +2,60 @@
 
 {% block content %}
 <div class="row mb-3">
-    <div class="col">
+    <div class="col-md-6">
         <h2>Gifts</h2>
     </div>
-    <div class="col text-end">
+    <div class="col-md-6 text-end">
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGiftModal">
             <i class="bi bi-gift-fill"></i> Add Gift
         </button>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('main.gifts_list') }}" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="search" placeholder="Search items..." value="{{ request.args.get('search', '') }}">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="person_id">
+                    <option value="">All People</option>
+                    {% for person in people %}
+                    <option value="{{ person.id }}" {% if request.args.get('person_id')|int == person.id %}selected{% endif %}>{{ person.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="occasion_id">
+                    <option value="">All Occasions</option>
+                    {% for occasion in occasions %}
+                    <option value="{{ occasion.id }}" {% if request.args.get('occasion_id')|int == occasion.id %}selected{% endif %}>{{ occasion.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                 <select class="form-select" name="status">
+                    <option value="">All Statuses</option>
+                    <option value="Idea" {% if request.args.get('status') == 'Idea' %}selected{% endif %}>Idea</option>
+                    <option value="Bought" {% if request.args.get('status') == 'Bought' %}selected{% endif %}>Bought</option>
+                    <option value="Given" {% if request.args.get('status') == 'Given' %}selected{% endif %}>Given</option>
+                </select>
+            </div>
+             <div class="col-md-2">
+                 <select class="form-select" name="sort_by">
+                    <option value="id_desc" {% if request.args.get('sort_by') == 'id_desc' %}selected{% endif %}>Newest First</option>
+                    <option value="price_asc" {% if request.args.get('sort_by') == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                    <option value="price_desc" {% if request.args.get('sort_by') == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                    <option value="name_asc" {% if request.args.get('sort_by') == 'name_asc' %}selected{% endif %}>Name: A-Z</option>
+                    <option value="name_desc" {% if request.args.get('sort_by') == 'name_desc' %}selected{% endif %}>Name: Z-A</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-secondary w-100">Filter</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -50,7 +97,7 @@
     </div>
     {% else %}
     <div class="col">
-        <p class="text-muted">No gifts tracked yet.</p>
+        <p class="text-muted">No gifts found matching criteria.</p>
     </div>
     {% endfor %}
 </div>

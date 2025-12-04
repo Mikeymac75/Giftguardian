@@ -239,10 +239,44 @@ def delete_person(id):
 
 @main.route('/gifts')
 def gifts_list():
-    gifts = Gift.query.order_by(Gift.id.desc()).all()
+    query = Gift.query
+
+    # Filtering
+    person_id = request.args.get('person_id')
+    if person_id:
+        query = query.filter_by(person_id=person_id)
+
+    occasion_id = request.args.get('occasion_id')
+    if occasion_id:
+        query = query.filter_by(occasion_id=occasion_id)
+
+    status = request.args.get('status')
+    if status:
+        query = query.filter_by(status=status)
+
+    search = request.args.get('search')
+    if search:
+        query = query.filter(Gift.item_name.ilike(f'%{search}%'))
+
+    # Sorting
+    sort_by = request.args.get('sort_by', 'id_desc')
+    if sort_by == 'price_asc':
+        query = query.order_by(Gift.price.asc())
+    elif sort_by == 'price_desc':
+        query = query.order_by(Gift.price.desc())
+    elif sort_by == 'name_asc':
+        query = query.order_by(Gift.item_name.asc())
+    elif sort_by == 'name_desc':
+        query = query.order_by(Gift.item_name.desc())
+    else:
+        # Default sort
+        query = query.order_by(Gift.id.desc())
+
+    gifts = query.all()
     people = Person.query.order_by(Person.name).all()
     occasions = Occasion.query.all()
     current_year = datetime.date.today().year
+
     return render_template('gifts.html', gifts=gifts, people=people, occasions=occasions, current_year=current_year)
 
 @main.route('/gifts/add', methods=['POST'])
@@ -326,3 +360,40 @@ def delete_gift(id):
     db.session.commit()
     flash('Gift deleted.', 'success')
     return redirect(url_for('main.gifts_list'))
+
+@main.route('/stats')
+def stats():
+    from sqlalchemy import func
+
+    # Filter by year if provided
+    year = request.args.get('year')
+    current_year = datetime.date.today().year
+
+    query = db.session.query(
+        Person.name,
+        Person.id,
+        func.count(Gift.id).label('total_gifts'),
+        func.coalesce(func.sum(Gift.price), 0.0).label('total_spent')
+    ).outerjoin(Gift, Person.id == Gift.person_id)
+
+    if year:
+        try:
+            year_val = int(year)
+            query = query.filter(Gift.year == year_val)
+        except ValueError:
+            pass
+
+    # Group by person
+    query = query.group_by(Person.id)
+
+    # Execute query
+    stats_data = query.all()
+
+    # Get all distinct years from gifts for the filter dropdown
+    available_years = db.session.query(Gift.year).distinct().filter(Gift.year.isnot(None)).order_by(Gift.year.desc()).all()
+    available_years = [y[0] for y in available_years]
+
+    if not available_years and current_year not in available_years:
+        available_years.append(current_year)
+
+    return render_template('stats.html', stats=stats_data, available_years=available_years, selected_year=year)
