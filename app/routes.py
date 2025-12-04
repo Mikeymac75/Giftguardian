@@ -272,12 +272,28 @@ def gifts_list():
         # Default sort
         query = query.order_by(Gift.id.desc())
 
+    # Year filter (multi-select)
+    years = request.args.getlist('years')
+    if years:
+        try:
+            year_vals = [int(y) for y in years if y]
+            if year_vals:
+                query = query.filter(Gift.year.in_(year_vals))
+        except ValueError:
+            pass
+
     gifts = query.all()
     people = Person.query.order_by(Person.name).all()
     occasions = Occasion.query.all()
     current_year = datetime.date.today().year
 
-    return render_template('gifts.html', gifts=gifts, people=people, occasions=occasions, current_year=current_year)
+    # Get available years for filter
+    available_years = db.session.query(Gift.year).distinct().filter(Gift.year.isnot(None)).order_by(Gift.year.desc()).all()
+    available_years = [y[0] for y in available_years]
+    if not available_years and current_year not in available_years:
+        available_years.append(current_year)
+
+    return render_template('gifts.html', gifts=gifts, people=people, occasions=occasions, current_year=current_year, available_years=available_years)
 
 @main.route('/gifts/add', methods=['POST'])
 def add_gift():

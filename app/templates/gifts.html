@@ -43,6 +43,14 @@
                     <option value="Given" {% if request.args.get('status') == 'Given' %}selected{% endif %}>Given</option>
                 </select>
             </div>
+            <div class="col-md-2">
+                 <select class="form-select" name="years" multiple aria-label="Select Years" style="height: 38px;">
+                    <option value="" disabled>Select Year(s)</option>
+                    {% for year in available_years %}
+                    <option value="{{ year }}" {% if year|string in request.args.getlist('years') %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
              <div class="col-md-2">
                  <select class="form-select" name="sort_by">
                     <option value="id_desc" {% if request.args.get('sort_by') == 'id_desc' %}selected{% endif %}>Newest First</option>
