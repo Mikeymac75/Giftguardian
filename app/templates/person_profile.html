@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.people_list') }}">People</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ person.name }}</li>
+            </ol>
+        </nav>
+        <h2>{{ person.name }}'s Profile</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                Details
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ person.name }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">
+                    {% if person.relation %}{{ person.relation.name }}{% else %}Unspecified{% endif %}
+                </h6>
+                <p class="card-text">
+                    <strong>Birthday:</strong>
+                    {{ person.birthday_month }}/{{ person.birthday_day }}
+                    {% if person.birthday_year %}/{{ person.birthday_year }}{% endif %}
+                </p>
+                <a href="{{ url_for('main.edit_person', id=person.id) }}" class="btn btn-primary w-100">Edit Details</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Special Occasions</span>
+                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addOccasionModal">
+                    <i class="bi bi-plus-lg"></i> Add Occasion
+                </button>
+            </div>
+            <ul class="list-group list-group-flush">
+                <!-- Always show Birthday as the primary occasion -->
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Birthday</strong>
+                        <div class="text-muted small">
+                            {{ person.birthday_month }}/{{ person.birthday_day }}
+                            {% if person.birthday_year %}/{{ person.birthday_year }}{% endif %}
+                        </div>
+                    </div>
+                    <span class="badge bg-secondary rounded-pill">Core</span>
+                </li>
+
+                {% for occ in person.occasions %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ occ.occasion.name }}</strong>
+                        <div class="text-muted small">
+                            {{ occ.month }}/{{ occ.day }}
+                            {% if occ.year %}/{{ occ.year }}{% endif %}
+                        </div>
+                    </div>
+                    <form action="{{ url_for('main.delete_person_occasion', id=occ.id) }}" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this date?')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+            {% if not person.occasions %}
+            <div class="card-body text-muted small">
+                No other occasions added yet. Add Anniversaries, Name Days, etc.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Occasion Modal -->
+<div class="modal fade" id="addOccasionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Occasion Date</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('main.add_person_occasion', id=person.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="occasion_id" class="form-label">Occasion Type</label>
+                        <select class="form-select" name="occasion_id" required>
+                            <option value="" selected disabled>Choose...</option>
+                            {% for occ in occasions %}
+                                <option value="{{ occ.id }}">{{ occ.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Don't see the type? Add it in Settings.</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="month" class="form-label">Month</label>
+                            <select class="form-select" name="month" required>
+                                {% for m in range(1, 13) %}
+                                <option value="{{ m }}">{{ m }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="day" class="form-label">Day</label>
+                            <select class="form-select" name="day" required>
+                                {% for d in range(1, 32) %}
+                                <option value="{{ d }}">{{ d }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="year" class="form-label">Year (Opt)</label>
+                            <input type="number" class="form-control" name="year" placeholder="YYYY">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Date</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

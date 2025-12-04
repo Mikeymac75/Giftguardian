@@ -1,5 +1,3 @@
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
-
 class IngressMiddleware:
     def __init__(self, app):
         self.app = app
