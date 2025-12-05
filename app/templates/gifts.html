@@ -20,18 +20,27 @@
                 <input type="text" class="form-control" name="search" placeholder="Search items..." value="{{ request.args.get('search', '') }}">
             </div>
             <div class="col-md-2">
-                <select class="form-select" name="person_id">
-                    <option value="">All People</option>
+                <select class="form-select" name="person_id" multiple size="1" onfocus="this.size=5;" onblur="this.size=1;" title="Hold Ctrl/Cmd to select multiple">
+                    <option value="" {% if not request.args.getlist('person_id') %}selected{% endif %}>All People</option>
                     {% for person in people %}
-                    <option value="{{ person.id }}" {% if request.args.get('person_id')|int == person.id %}selected{% endif %}>{{ person.name }}</option>
+                    <option value="{{ person.id }}" {% if person.id|string in request.args.getlist('person_id') %}selected{% endif %}>{{ person.name }}</option>
                     {% endfor %}
                 </select>
+                <small class="form-text text-muted" style="font-size: 0.7rem;">Ctrl+Click for multiple</small>
             </div>
             <div class="col-md-2">
                 <select class="form-select" name="occasion_id">
                     <option value="">All Occasions</option>
                     {% for occasion in occasions %}
                     <option value="{{ occasion.id }}" {% if request.args.get('occasion_id')|int == occasion.id %}selected{% endif %}>{{ occasion.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="year">
+                    <option value="">All Years</option>
+                    {% for year in available_years %}
+                    <option value="{{ year }}" {% if request.args.get('year') and request.args.get('year')|int == year %}selected{% endif %}>{{ year }}</option>
                     {% endfor %}
                 </select>
             </div>
