@@ -372,6 +372,15 @@ def edit_gift(id):
 def delete_gift(id):
     gift = Gift.query.get_or_404(id)
     # Ideally delete the image file here too
+    if gift.image_path:
+        try:
+            file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], gift.image_path)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            # Log the error but continue to delete the gift from DB
+            current_app.logger.error(f"Error deleting image file: {e}")
+
     db.session.delete(gift)
     db.session.commit()
     flash('Gift deleted.', 'success')
