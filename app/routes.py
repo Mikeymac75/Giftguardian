@@ -355,8 +355,14 @@ def edit_gift(id):
                 filename = f"{timestamp}_{filename}"
                 file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
 
-                # Delete old image if exists (optional, keeping it simple for now)
-                # if gift.image_path: ...
+                # Delete old image if exists
+                if gift.image_path:
+                    try:
+                        old_file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], gift.image_path)
+                        if os.path.exists(old_file_path):
+                            os.remove(old_file_path)
+                    except Exception as e:
+                        current_app.logger.error(f"Error deleting old image file: {e}")
 
                 gift.image_path = filename
 
