@@ -1,65 +1,154 @@
 {% extends 'base.html' %}
+{% set mn = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] %}
 
 {% block content %}
-<div class="row">
-    <!-- Upcoming Birthdays -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header bg-info text-dark">
-                <h5 class="card-title mb-0"><i class="bi bi-cake2-fill"></i> Upcoming Birthdays</h5>
+
+{# ── Urgent banner ── #}
+{% set urgent = upcoming_events | selectattr('days_until', 'le', 7) | list %}
+{% if urgent %}
+<div class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert">
+  <i class="bi bi-bell-fill fs-5"></i>
+  <div>
+    <strong>{{ urgent | length }} event{{ 's' if urgent | length != 1 else '' }} this week!</strong>
+    {% for ev in urgent[:3] %}
+      &nbsp;·&nbsp; {{ ev.name }}
+      {% if ev.days_until == 0 %}<span class="badge bg-danger">Today</span>
+      {% else %}<span class="badge bg-warning text-dark">{{ ev.urgency_label }}</span>{% endif %}
+    {% endfor %}
+    {% if urgent | length > 3 %}&nbsp;and {{ urgent | length - 3 }} more…{% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+
+  {# ── Upcoming Events ── #}
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-calendar-event-fill me-2 text-info"></i>Upcoming Events</span>
+        <a href="{{ url_for('main.people_list') }}" class="btn btn-sm btn-outline-secondary">All People</a>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for event in upcoming_events %}
+        {% set li_class = 'urgency-danger' if event.urgency == 'danger' else ('urgency-warning' if event.urgency == 'warning' else '') %}
+        <div class="list-group-item {{ li_class }}">
+          <div class="d-flex align-items-center gap-3">
+            <div class="text-center" style="min-width:38px;">
+              <div class="fs-6 text-{{ event.urgency }}"><i class="bi {{ event.icon }}"></i></div>
+              <div class="text-muted" style="font-size:0.68rem;">{{ mn[event.date.month] }}&nbsp;{{ event.date.day }}</div>
             </div>
-            <div class="list-group list-group-flush">
-                {% for event in upcoming_birthdays %}
-                <div class="list-group-item">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">{{ event.name }}</h5>
-                        <small>{{ event.date.month }}/{{ event.date.day }}</small>
-                    </div>
-                    <p class="mb-1 text-muted">{{ event.person.relation.name if event.person.relation else 'Relation N/A' }}</p>
-                    <small>
-                        {% if event.days_until == 0 %}
-                        <span class="badge bg-danger">Today!</span>
-                        {% elif event.days_until == 1 %}
-                        <span class="badge bg-warning text-dark">Tomorrow</span>
-                        {% else %}
-                        In {{ event.days_until }} days
-                        {% endif %}
-                    </small>
-                </div>
-                {% else %}
-                <div class="list-group-item text-muted">No upcoming birthdays found.</div>
-                {% endfor %}
+            <div class="flex-grow-1 min-width-0">
+              <div class="fw-semibold text-truncate">{{ event.name }}</div>
+              <div class="text-muted small">
+                {{ event.person.relation.name if event.person.relation else '' }}
+                {% if event.age %} · Turning {{ event.age }}{% endif %}
+              </div>
             </div>
-             <div class="card-footer text-center">
-                 <a href="{{ url_for('main.people_list') }}" class="btn btn-sm btn-outline-secondary">View All People</a>
+            <div class="text-end" style="min-width:80px;">
+              <span class="badge bg-{{ event.urgency }} text-{{ 'dark' if event.urgency == 'warning' else 'white' }}">
+                {{ event.urgency_label }}
+              </span>
+              {% if event.urgency != 'secondary' %}
+              <div class="mt-1">
+                <a href="{{ url_for('main.gifts_list', person_id=event.person.id) }}"
+                   class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:0.65rem;" title="View gifts">
+                  <i class="bi bi-gift"></i>
+                </a>
+              </div>
+              {% endif %}
             </div>
+          </div>
         </div>
+        {% else %}
+        <div class="list-group-item text-muted text-center py-4">
+          <i class="bi bi-calendar-x fs-3 d-block mb-2 opacity-50"></i>
+          No people added yet.
+          <a href="{{ url_for('main.people_list') }}" class="d-block mt-1 small">Add your first person →</a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {# ── Right column ── #}
+  <div class="col-lg-6">
+
+    {# Recent Gift Ideas #}
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-lightbulb-fill me-2 text-warning"></i>Recent Gifts</span>
+        <a href="{{ url_for('main.gifts_list') }}" class="btn btn-sm btn-outline-secondary">All Gifts</a>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for gift in recent_gifts %}
+        <a href="{{ url_for('main.edit_gift', id=gift.id) }}"
+           class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2">
+
+          {# Thumbnail #}
+          <div style="width:44px;height:44px;flex-shrink:0;border-radius:6px;overflow:hidden;">
+            {% if gift.image_path %}
+            <img src="{{ url_for('main.uploaded_file', filename=gift.image_path) }}"
+                 style="width:100%;height:100%;object-fit:cover;" alt="">
+            {% elif gift.image_url %}
+            <img src="{{ gift.image_url }}" style="width:100%;height:100%;object-fit:cover;"
+                 alt="" onerror="this.parentElement.innerHTML='<div class=\'gift-img-placeholder\' style=\'width:44px;height:44px;border-radius:6px;display:flex;align-items:center;justify-content:center;\'><i class=\'bi bi-gift\'></i></div>'">
+            {% else %}
+            <div class="gift-img-placeholder" style="width:44px;height:44px;border-radius:6px;">
+              <i class="bi bi-gift"></i>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="flex-grow-1 min-width-0">
+            <div class="fw-semibold text-truncate">{{ gift.item_name }}</div>
+            <div class="text-muted small">For: {{ gift.person.name if gift.person else '—' }}</div>
+          </div>
+          <div class="text-end">
+            {% if gift.status == 'Idea' %}
+              <span class="badge badge-idea">Idea</span>
+            {% elif gift.status == 'Bought' %}
+              <span class="badge badge-bought">Bought</span>
+            {% else %}
+              <span class="badge badge-given">Given</span>
+            {% endif %}
+            {% if gift.price %}
+            <div class="text-muted small">${{ "%.0f"|format(gift.price) }}</div>
+            {% endif %}
+          </div>
+        </a>
+        {% else %}
+        <div class="list-group-item text-muted text-center py-4">
+          <i class="bi bi-gift fs-3 d-block mb-2 opacity-50"></i>
+          No gifts yet.
+          <a href="{{ url_for('main.gifts_list') }}" class="d-block mt-1 small">Add your first gift →</a>
+        </div>
+        {% endfor %}
+      </div>
     </div>
 
-    <!-- Recent Gift Ideas -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header bg-success text-white">
-                <h5 class="card-title mb-0"><i class="bi bi-lightbulb-fill"></i> Recent Ideas</h5>
-            </div>
-            <div class="list-group list-group-flush">
-                {% for gift in recent_gifts %}
-                <a href="{{ url_for('main.edit_gift', id=gift.id) }}" class="list-group-item list-group-item-action">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">{{ gift.item_name }}</h5>
-                        <small>${{ "%.2f"|format(gift.price|default(0, true)) }}</small>
-                    </div>
-                    <p class="mb-1">For: {{ gift.person.name }}</p>
-                    <small class="text-muted">Added: {{ gift.status }}</small>
-                </a>
-                {% else %}
-                 <div class="list-group-item text-muted">No gift ideas yet.</div>
-                {% endfor %}
-            </div>
-             <div class="card-footer text-center">
-                 <a href="{{ url_for('main.gifts_list') }}" class="btn btn-sm btn-outline-secondary">View All Gifts</a>
-            </div>
+    {# Quick Stats #}
+    <div class="row g-3">
+      <div class="col-4">
+        <div class="card text-center py-3">
+          <div class="fs-2 fw-bold text-info">{{ upcoming_events | length }}</div>
+          <div class="text-muted small">Upcoming</div>
         </div>
+      </div>
+      <div class="col-4">
+        <div class="card text-center py-3">
+          <div class="fs-2 fw-bold text-warning">{{ recent_gifts | selectattr('status', 'equalto', 'Idea') | list | length }}</div>
+          <div class="text-muted small">Ideas</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="card text-center py-3">
+          <div class="fs-2 fw-bold text-success">{{ recent_gifts | selectattr('status', 'equalto', 'Given') | list | length }}</div>
+          <div class="text-muted small">Given</div>
+        </div>
+      </div>
     </div>
+
+  </div>
 </div>
 {% endblock %}

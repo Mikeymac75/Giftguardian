@@ -9,7 +9,6 @@ class Occasion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
     gifts = db.relationship('Gift', backref='occasion', lazy=True)
-    # Allows finding all people who celebrate this occasion
     person_occasions = db.relationship('PersonOccasion', backref='occasion', lazy=True)
 
 class Person(db.Model):
@@ -19,7 +18,7 @@ class Person(db.Model):
     birthday_month = db.Column(db.Integer, nullable=False)
     birthday_day = db.Column(db.Integer, nullable=False)
     birthday_year = db.Column(db.Integer, nullable=True)
-    gifts = db.relationship('Gift', backref='person', lazy=True)
+    gifts = db.relationship('Gift', backref='person', lazy=True, foreign_keys='Gift.person_id')
     occasions = db.relationship('PersonOccasion', backref='person', lazy=True, cascade="all, delete-orphan")
 
 class PersonOccasion(db.Model):
@@ -36,6 +35,8 @@ class Gift(db.Model):
     price = db.Column(db.Float, nullable=True)
     occasion_id = db.Column(db.Integer, db.ForeignKey('occasion.id'), nullable=True)
     year = db.Column(db.Integer, nullable=True)
-    status = db.Column(db.String(20), default='Idea') # Idea, Bought, Given
+    status = db.Column(db.String(20), default='Idea')  # Idea, Bought, Given
     image_path = db.Column(db.String(200), nullable=True)
-    person_id = db.Column(db.Integer, db.ForeignKey('person.id'), nullable=False)
+    image_url = db.Column(db.String(500), nullable=True)   # URL-based image (e.g. Amazon link)
+    notes = db.Column(db.Text, nullable=True)              # Notes, links, descriptions
+    person_id = db.Column(db.Integer, db.ForeignKey('person.id'), nullable=True)  # NULL = Gift Pool

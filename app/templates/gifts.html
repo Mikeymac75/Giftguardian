@@ -1,177 +1,375 @@
 {% extends 'base.html' %}
 
+{% macro gift_image(gift, height='180px') %}
+{% if gift.image_path %}
+  <img src="{{ url_for('main.uploaded_file', filename=gift.image_path) }}"
+       class="card-img-top" style="height:{{ height }};object-fit:cover;" alt="{{ gift.item_name }}">
+{% elif gift.image_url %}
+  <img src="{{ gift.image_url }}" class="card-img-top"
+       style="height:{{ height }};object-fit:cover;" alt="{{ gift.item_name }}"
+       onerror="this.outerHTML='<div class=\'gift-img-placeholder card-img-top\' style=\'height:{{ height }};\'><i class=\'bi bi-gift\' style=\'font-size:2.5rem;\'></i></div>'">
+{% else %}
+  <div class="gift-img-placeholder card-img-top" style="height:{{ height }};">
+    <i class="bi bi-gift" style="font-size:2.5rem;"></i>
+  </div>
+{% endif %}
+{% endmacro %}
+
 {% block content %}
-<div class="row mb-3">
-    <div class="col-md-6">
-        <h2>Gifts</h2>
-    </div>
-    <div class="col-md-6 text-end">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGiftModal">
-            <i class="bi bi-gift-fill"></i> Add Gift
-        </button>
-    </div>
+
+{# ── Page header ── #}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0"><i class="bi bi-gift me-2"></i>Gifts</h2>
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGiftModal">
+    <i class="bi bi-plus-lg me-1"></i>Add Gift
+  </button>
 </div>
 
-<!-- Filters -->
+{# ── Tab navigation ── #}
+<ul class="nav nav-tabs mb-3" id="giftTabs">
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'gifts' %}active{% endif %}"
+       href="{{ url_for('main.gifts_list') }}">
+      <i class="bi bi-gift me-1"></i>Gifts
+      <span class="badge bg-secondary ms-1">{{ gifts | length }}</span>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'pool' %}active{% endif %}"
+       href="{{ url_for('main.gifts_list', tab='pool') }}">
+      <i class="bi bi-collection me-1"></i>Gift Pool
+      <span class="badge pool-badge text-white ms-1">{{ pool_gifts | length }}</span>
+    </a>
+  </li>
+</ul>
+
+
+{# ════════════════════════════════════════════ #}
+{# TAB: GIFTS                                   #}
+{# ════════════════════════════════════════════ #}
+{% if active_tab == 'gifts' %}
+
+{# Filters #}
 <div class="card mb-4">
-    <div class="card-body">
-        <form method="GET" action="{{ url_for('main.gifts_list') }}" class="row g-3">
-            <div class="col-md-3">
-                <input type="text" class="form-control" name="search" placeholder="Search items..." value="{{ request.args.get('search', '') }}">
-            </div>
-            <div class="col-md-2">
-                <select class="form-select" name="person_id" multiple size="1" onfocus="this.size=5;" onblur="this.size=1;" title="Hold Ctrl/Cmd to select multiple">
-                    <option value="" {% if not request.args.getlist('person_id') %}selected{% endif %}>All People</option>
-                    {% for person in people %}
-                    <option value="{{ person.id }}" {% if person.id|string in request.args.getlist('person_id') %}selected{% endif %}>{{ person.name }}</option>
-                    {% endfor %}
-                </select>
-                <small class="form-text text-muted" style="font-size: 0.7rem;">Ctrl+Click for multiple</small>
-            </div>
-            <div class="col-md-2">
-                <select class="form-select" name="occasion_id">
-                    <option value="">All Occasions</option>
-                    {% for occasion in occasions %}
-                    <option value="{{ occasion.id }}" {% if request.args.get('occasion_id')|int == occasion.id %}selected{% endif %}>{{ occasion.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select class="form-select" name="year">
-                    <option value="">All Years</option>
-                    {% for year in available_years %}
-                    <option value="{{ year }}" {% if request.args.get('year') and request.args.get('year')|int == year %}selected{% endif %}>{{ year }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                 <select class="form-select" name="status">
-                    <option value="">All Statuses</option>
-                    <option value="Idea" {% if request.args.get('status') == 'Idea' %}selected{% endif %}>Idea</option>
-                    <option value="Bought" {% if request.args.get('status') == 'Bought' %}selected{% endif %}>Bought</option>
-                    <option value="Given" {% if request.args.get('status') == 'Given' %}selected{% endif %}>Given</option>
-                </select>
-            </div>
-             <div class="col-md-2">
-                 <select class="form-select" name="sort_by">
-                    <option value="id_desc" {% if request.args.get('sort_by') == 'id_desc' %}selected{% endif %}>Newest First</option>
-                    <option value="price_asc" {% if request.args.get('sort_by') == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
-                    <option value="price_desc" {% if request.args.get('sort_by') == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
-                    <option value="name_asc" {% if request.args.get('sort_by') == 'name_asc' %}selected{% endif %}>Name: A-Z</option>
-                    <option value="name_desc" {% if request.args.get('sort_by') == 'name_desc' %}selected{% endif %}>Name: Z-A</option>
-                </select>
-            </div>
-            <div class="col-md-1">
-                <button type="submit" class="btn btn-secondary w-100">Filter</button>
-            </div>
-        </form>
-    </div>
+  <div class="card-body py-2">
+    <form method="GET" action="{{ url_for('main.gifts_list') }}" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <input type="text" class="form-control form-control-sm" name="search"
+               placeholder="Search…" value="{{ request.args.get('search', '') }}">
+      </div>
+      <div class="col-md-2">
+        <select class="form-select form-select-sm" name="person_id">
+          <option value="">All People</option>
+          {% for person in people %}
+          <option value="{{ person.id }}"
+                  {% if person.id|string in request.args.getlist('person_id') %}selected{% endif %}>
+            {{ person.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select form-select-sm" name="occasion_id">
+          <option value="">All Occasions</option>
+          {% for occ in occasions %}
+          <option value="{{ occ.id }}"
+                  {% if request.args.get('occasion_id')|int == occ.id %}selected{% endif %}>
+            {{ occ.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-1">
+        <select class="form-select form-select-sm" name="year">
+          <option value="">All Years</option>
+          {% for y in available_years %}
+          <option value="{{ y }}" {% if request.args.get('year') and request.args.get('year')|int == y %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select form-select-sm" name="status">
+          <option value="">All Statuses</option>
+          <option value="Idea"   {% if request.args.get('status') == 'Idea'   %}selected{% endif %}>Idea</option>
+          <option value="Bought" {% if request.args.get('status') == 'Bought' %}selected{% endif %}>Bought</option>
+          <option value="Given"  {% if request.args.get('status') == 'Given'  %}selected{% endif %}>Given</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select form-select-sm" name="sort_by">
+          <option value="id_desc"   {% if request.args.get('sort_by','id_desc') == 'id_desc'   %}selected{% endif %}>Newest First</option>
+          <option value="price_asc" {% if request.args.get('sort_by') == 'price_asc'  %}selected{% endif %}>Price ↑</option>
+          <option value="price_desc"{% if request.args.get('sort_by') == 'price_desc' %}selected{% endif %}>Price ↓</option>
+          <option value="name_asc"  {% if request.args.get('sort_by') == 'name_asc'   %}selected{% endif %}>Name A→Z</option>
+          <option value="name_desc" {% if request.args.get('sort_by') == 'name_desc'  %}selected{% endif %}>Name Z→A</option>
+        </select>
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-secondary">Filter</button>
+        <a href="{{ url_for('main.gifts_list') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+      </div>
+    </form>
+  </div>
 </div>
 
-<div class="row">
-    {% for gift in gifts %}
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            {% if gift.image_path %}
-            <img src="{{ url_for('main.uploaded_file', filename=gift.image_path) }}" class="card-img-top" alt="{{ gift.item_name }}" style="height: 200px; object-fit: cover;">
-            {% else %}
-            <div class="bg-secondary text-white d-flex justify-content-center align-items-center" style="height: 200px;">
-                <i class="bi bi-gift" style="font-size: 3rem;"></i>
-            </div>
-            {% endif %}
-            <div class="card-body">
-                <h5 class="card-title">{{ gift.item_name }}</h5>
-                <h6 class="card-subtitle mb-2 text-muted">
-                    For: {{ gift.person.name }}
-                </h6>
-                <p class="card-text">
-                    <strong>Price:</strong> ${{ "%.2f"|format(gift.price|default(0, true)) }}<br>
-                    <strong>Occasion:</strong> {{ gift.occasion.name if gift.occasion else 'None' }}<br>
-                    <strong>Year:</strong> {{ gift.year if gift.year else 'N/A' }}<br>
-                    <strong>Status:</strong>
-                    {% if gift.status == 'Idea' %}
-                        <span class="badge bg-info">Idea</span>
-                    {% elif gift.status == 'Bought' %}
-                        <span class="badge bg-warning text-dark">Bought</span>
-                    {% elif gift.status == 'Given' %}
-                        <span class="badge bg-success">Given</span>
-                    {% endif %}
-                </p>
-                <a href="{{ url_for('main.edit_gift', id=gift.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                <form action="{{ url_for('main.delete_gift', id=gift.id) }}" method="POST" style="display:inline;">
-                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this gift?')">Delete</button>
-                </form>
-            </div>
+{# Gift grid #}
+<div class="row g-3">
+  {% for gift in gifts %}
+  <div class="col-md-4 col-sm-6">
+    <div class="card h-100 gift-card-{{ gift.status | lower }}">
+      {{ gift_image(gift) }}
+      <div class="card-body d-flex flex-column">
+        <h5 class="card-title fw-semibold mb-1">{{ gift.item_name }}</h5>
+        <div class="text-muted small mb-2">
+          <i class="bi bi-person me-1"></i>{{ gift.person.name if gift.person else '—' }}
+          {% if gift.occasion %} · {{ gift.occasion.name }}{% endif %}
+          {% if gift.year %} · {{ gift.year }}{% endif %}
         </div>
-    </div>
-    {% else %}
-    <div class="col">
-        <p class="text-muted">No gifts found matching criteria.</p>
-    </div>
-    {% endfor %}
-</div>
 
-<!-- Add Gift Modal -->
-<div class="modal fade" id="addGiftModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add New Gift</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        {% if gift.notes %}
+        <div class="text-muted small mb-2 text-truncate-2">
+          <i class="bi bi-sticky me-1"></i>{{ gift.notes }}
+        </div>
+        {% endif %}
+
+        <div class="mt-auto">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              {% if gift.status == 'Idea' %}
+                <span class="badge badge-idea">Idea</span>
+              {% elif gift.status == 'Bought' %}
+                <span class="badge badge-bought">Bought</span>
+              {% else %}
+                <span class="badge badge-given">Given</span>
+              {% endif %}
             </div>
-            <form action="{{ url_for('main.add_gift') }}" method="POST" enctype="multipart/form-data">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="item_name" class="form-label">Item Name</label>
-                        <input type="text" class="form-control" name="item_name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="person_id" class="form-label">For Who?</label>
-                        <select class="form-select" name="person_id" required>
-                            <option value="" selected disabled>Choose Person...</option>
-                            {% for person in people %}
-                                <option value="{{ person.id }}">{{ person.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="occasion_id" class="form-label">Occasion</label>
-                        <select class="form-select" name="occasion_id">
-                            <option value="">None / General</option>
-                            {% for occasion in occasions %}
-                                <option value="{{ occasion.id }}">{{ occasion.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                             <label for="price" class="form-label">Price ($)</label>
-                             <input type="number" step="0.01" class="form-control" name="price" placeholder="0.00">
-                        </div>
-                         <div class="col-md-6 mb-3">
-                             <label for="year" class="form-label">Year</label>
-                             <input type="number" class="form-control" name="year" value="{{ current_year }}">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="status" class="form-label">Status</label>
-                        <select class="form-select" name="status" required>
-                            <option value="Idea">Idea</option>
-                            <option value="Bought">Bought</option>
-                            <option value="Given">Given</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="image" class="form-label">Image</label>
-                        <input type="file" class="form-control" name="image" accept="image/*">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Save Gift</button>
-                </div>
+            <div class="text-muted small fw-semibold">
+              {% if gift.price %}${{ "%.2f"|format(gift.price) }}{% endif %}
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            {# Quick status cycle #}
+            <form action="{{ url_for('main.toggle_gift_status', id=gift.id) }}" method="POST" class="flex-shrink-0">
+              <button type="submit" class="btn btn-outline-secondary btn-sm"
+                      title="Cycle: Idea → Bought → Given">
+                <i class="bi bi-arrow-repeat"></i>
+              </button>
             </form>
+            <a href="{{ url_for('main.edit_gift', id=gift.id) }}" class="btn btn-outline-primary btn-sm flex-fill">
+              <i class="bi bi-pencil me-1"></i>Edit
+            </a>
+            <form action="{{ url_for('main.delete_gift', id=gift.id) }}" method="POST">
+              <button type="submit" class="btn btn-outline-danger btn-sm"
+                      onclick="return confirm('Delete this gift?')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="card text-center py-5">
+      <div class="card-body text-muted">
+        <i class="bi bi-search fs-2 d-block mb-2 opacity-25"></i>
+        No gifts match your filters.
+        <a href="{{ url_for('main.gifts_list') }}" class="d-block mt-1 small">Clear filters</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
 </div>
+
+
+{# ════════════════════════════════════════════ #}
+{# TAB: GIFT POOL                               #}
+{# ════════════════════════════════════════════ #}
+{% else %}
+
+<div class="alert alert-secondary d-flex gap-2 mb-3">
+  <i class="bi bi-info-circle-fill mt-1 flex-shrink-0"></i>
+  <div>
+    <strong>Gift Pool</strong> — shared ideas that work for multiple people.
+    Assign a pool gift to someone and a copy is added to their gift list. The pool idea stays here for reuse.
+  </div>
+</div>
+
+<div class="d-flex justify-content-end mb-3">
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGiftModal"
+          onclick="document.getElementById('isPoolInput').value='1'">
+    <i class="bi bi-plus-lg me-1"></i>Add to Pool
+  </button>
+</div>
+
+<div class="row g-3">
+  {% for gift in pool_gifts %}
+  <div class="col-md-4 col-sm-6">
+    <div class="card h-100" style="border-left:4px solid #6366f1 !important;">
+      {{ gift_image(gift) }}
+      <div class="card-body d-flex flex-column">
+        <h5 class="card-title fw-semibold mb-1">{{ gift.item_name }}</h5>
+        <div class="text-muted small mb-2">
+          {% if gift.occasion %}<i class="bi bi-tag me-1"></i>{{ gift.occasion.name }}{% endif %}
+          {% if gift.price %} · ${{ "%.2f"|format(gift.price) }}{% endif %}
+        </div>
+        {% if gift.notes %}
+        <div class="text-muted small mb-2 text-truncate-2">
+          <i class="bi bi-sticky me-1"></i>{{ gift.notes }}
+        </div>
+        {% endif %}
+
+        <div class="mt-auto">
+          {# Assign to person #}
+          <form action="{{ url_for('main.assign_pool_gift', id=gift.id) }}" method="POST" class="mb-2">
+            <div class="input-group input-group-sm">
+              <select name="person_id" class="form-select" required>
+                <option value="" disabled selected>Assign to…</option>
+                {% for person in people %}
+                <option value="{{ person.id }}">{{ person.name }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-success">
+                <i class="bi bi-person-plus"></i>
+              </button>
+            </div>
+          </form>
+
+          <div class="d-flex gap-2">
+            <a href="{{ url_for('main.edit_gift', id=gift.id) }}" class="btn btn-outline-primary btn-sm flex-fill">
+              <i class="bi bi-pencil me-1"></i>Edit
+            </a>
+            <form action="{{ url_for('main.delete_gift', id=gift.id) }}" method="POST">
+              <button type="submit" class="btn btn-outline-danger btn-sm"
+                      onclick="return confirm('Remove from pool?')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="card text-center py-5">
+      <div class="card-body text-muted">
+        <i class="bi bi-collection fs-2 d-block mb-2 opacity-25"></i>
+        No gift pool ideas yet.
+        <div class="mt-2">
+          <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addGiftModal"
+                  onclick="document.getElementById('isPoolInput').value='1'">
+            Add First Pool Gift
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% endif %}
+
+
+{# ── Add Gift Modal ── #}
+<div class="modal fade" id="addGiftModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-gift-fill me-2"></i>Add Gift</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('main.add_gift') }}" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="is_pool" id="isPoolInput" value="{{ '1' if active_tab == 'pool' else '0' }}">
+        <div class="modal-body">
+
+          <div class="mb-3">
+            <label class="form-label">Item Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="item_name" required placeholder="What is the gift?">
+          </div>
+
+          <div class="mb-3" id="personSelectRow">
+            <label class="form-label">For Who?</label>
+            <select class="form-select" name="person_id">
+              <option value="" {% if active_tab == 'pool' %}selected{% endif %}>— Leave blank to add to Gift Pool —</option>
+              {% for person in people %}
+              <option value="{{ person.id }}">{{ person.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Leave blank to save as a pool gift usable for anyone.</div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Occasion</label>
+              <select class="form-select" name="occasion_id">
+                <option value="">General</option>
+                {% for occ in occasions %}
+                <option value="{{ occ.id }}">{{ occ.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Price ($)</label>
+              <input type="number" step="0.01" min="0" class="form-control" name="price" placeholder="0.00">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Year</label>
+              <input type="number" class="form-control" name="year" value="{{ current_year }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Status</label>
+              <select class="form-select" name="status">
+                <option value="Idea">Idea</option>
+                <option value="Bought">Bought</option>
+                <option value="Given">Given</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Image URL <span class="text-muted">(paste a product image URL)</span></label>
+            <input type="url" class="form-control" name="image_url" placeholder="https://example.com/image.jpg"
+                   id="imgUrlInput" oninput="previewUrl(this)">
+            <div id="imgUrlPreview" class="mt-2" style="display:none;">
+              <img id="imgUrlPreviewImg" src="" alt="Preview"
+                   style="height:80px;border-radius:6px;object-fit:cover;" onerror="this.parentElement.style.display='none'">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Or Upload Image</label>
+            <input type="file" class="form-control" name="image" accept="image/*">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Notes / Link</label>
+            <textarea class="form-control" name="notes" rows="2"
+                      placeholder="Amazon URL, colour, size, where to buy…"></textarea>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Gift</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function previewUrl(input) {
+  var preview = document.getElementById('imgUrlPreview');
+  var img = document.getElementById('imgUrlPreviewImg');
+  if (input.value) {
+    img.src = input.value;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+</script>
 {% endblock %}

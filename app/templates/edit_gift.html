@@ -1,69 +1,157 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('main.gifts_list') }}">Gifts</a></li>
+    <li class="breadcrumb-item active">Edit Gift</li>
+  </ol>
+</nav>
+
 <div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Edit Gift</h5>
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0"><i class="bi bi-pencil me-2"></i>Edit Gift</h5>
+        {# Quick status badge #}
+        {% if gift.status == 'Idea' %}
+          <span class="badge badge-idea fs-6">Idea</span>
+        {% elif gift.status == 'Bought' %}
+          <span class="badge badge-bought fs-6">Bought</span>
+        {% else %}
+          <span class="badge badge-given fs-6">Given</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <form action="{{ url_for('main.edit_gift', id=gift.id) }}" method="POST" enctype="multipart/form-data">
+
+          <div class="mb-3">
+            <label class="form-label">Item Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="item_name" value="{{ gift.item_name }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">For Who?</label>
+            <select class="form-select" name="person_id">
+              <option value="">— Gift Pool (no person) —</option>
+              {% for person in people %}
+              <option value="{{ person.id }}" {% if gift.person_id == person.id %}selected{% endif %}>
+                {{ person.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Occasion</label>
+              <select class="form-select" name="occasion_id">
+                <option value="">General</option>
+                {% for occ in occasions %}
+                <option value="{{ occ.id }}" {% if gift.occasion_id == occ.id %}selected{% endif %}>
+                  {{ occ.name }}
+                </option>
+                {% endfor %}
+              </select>
             </div>
-            <div class="card-body">
-                <form action="{{ url_for('main.edit_gift', id=gift.id) }}" method="POST" enctype="multipart/form-data">
-                    <div class="mb-3">
-                        <label for="item_name" class="form-label">Item Name</label>
-                        <input type="text" class="form-control" name="item_name" value="{{ gift.item_name }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="person_id" class="form-label">For Who?</label>
-                        <select class="form-select" name="person_id" required>
-                            {% for person in people %}
-                                <option value="{{ person.id }}" {% if gift.person_id == person.id %}selected{% endif %}>{{ person.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="occasion_id" class="form-label">Occasion</label>
-                        <select class="form-select" name="occasion_id">
-                            <option value="">None / General</option>
-                            {% for occasion in occasions %}
-                                <option value="{{ occasion.id }}" {% if gift.occasion_id == occasion.id %}selected{% endif %}>{{ occasion.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                             <label for="price" class="form-label">Price ($)</label>
-                             <input type="number" step="0.01" class="form-control" name="price" value="{{ gift.price }}" placeholder="0.00">
-                        </div>
-                         <div class="col-md-6 mb-3">
-                             <label for="year" class="form-label">Year</label>
-                             <input type="number" class="form-control" name="year" value="{{ gift.year }}">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="status" class="form-label">Status</label>
-                        <select class="form-select" name="status" required>
-                            <option value="Idea" {% if gift.status == 'Idea' %}selected{% endif %}>Idea</option>
-                            <option value="Bought" {% if gift.status == 'Bought' %}selected{% endif %}>Bought</option>
-                            <option value="Given" {% if gift.status == 'Given' %}selected{% endif %}>Given</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="image" class="form-label">Update Image</label>
-                        {% if gift.image_path %}
-                            <div class="mb-2">
-                                <img src="{{ url_for('main.uploaded_file', filename=gift.image_path) }}" alt="Current Image" style="height: 100px;">
-                            </div>
-                        {% endif %}
-                        <input type="file" class="form-control" name="image" accept="image/*">
-                    </div>
-                    <div class="d-flex justify-content-between">
-                         <a href="{{ url_for('main.gifts_list') }}" class="btn btn-secondary">Cancel</a>
-                         <button type="submit" class="btn btn-primary">Update Gift</button>
-                    </div>
-                </form>
+            <div class="col-md-3">
+              <label class="form-label">Price ($)</label>
+              <input type="number" step="0.01" min="0" class="form-control" name="price"
+                     value="{{ gift.price if gift.price is not none else '' }}" placeholder="0.00">
             </div>
-        </div>
+            <div class="col-md-2">
+              <label class="form-label">Year</label>
+              <input type="number" class="form-control" name="year"
+                     value="{{ gift.year if gift.year else '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Status</label>
+              <select class="form-select" name="status">
+                <option value="Idea"   {% if gift.status == 'Idea'   %}selected{% endif %}>Idea</option>
+                <option value="Bought" {% if gift.status == 'Bought' %}selected{% endif %}>Bought</option>
+                <option value="Given"  {% if gift.status == 'Given'  %}selected{% endif %}>Given</option>
+              </select>
+            </div>
+          </div>
+
+          {# Image section #}
+          <div class="card bg-dark bg-opacity-25 p-3 mb-3">
+            <div class="fw-semibold small mb-2"><i class="bi bi-image me-1"></i>Image</div>
+
+            {# Current image display #}
+            {% if gift.image_path %}
+            <div class="mb-2 d-flex align-items-center gap-3">
+              <img src="{{ url_for('main.uploaded_file', filename=gift.image_path) }}"
+                   style="height:80px;border-radius:6px;object-fit:cover;" alt="Current">
+              <div class="text-muted small">Uploaded file (upload a new one to replace)</div>
+            </div>
+            {% elif gift.image_url %}
+            <div class="mb-2 d-flex align-items-center gap-3">
+              <img src="{{ gift.image_url }}" style="height:80px;border-radius:6px;object-fit:cover;"
+                   alt="Current" onerror="this.style.display='none'">
+              <div class="text-muted small">Image from URL</div>
+            </div>
+            {% endif %}
+
+            <div class="mb-2">
+              <label class="form-label form-label-sm">Image URL</label>
+              <input type="url" class="form-control form-control-sm" name="image_url"
+                     value="{{ gift.image_url or '' }}"
+                     placeholder="https://example.com/product-image.jpg"
+                     id="editImgUrl" oninput="previewEditUrl(this)">
+              <div id="editImgPreview" {% if not gift.image_url %}style="display:none;"{% endif %} class="mt-1">
+                <img id="editImgPreviewImg" src="{{ gift.image_url or '' }}"
+                     style="height:60px;border-radius:4px;object-fit:cover;" alt="Preview"
+                     onerror="this.parentElement.style.display='none'">
+              </div>
+            </div>
+
+            <div>
+              <label class="form-label form-label-sm">Upload New Image (replaces current)</label>
+              <input type="file" class="form-control form-control-sm" name="image" accept="image/*">
+            </div>
+          </div>
+
+          {# Notes #}
+          <div class="mb-4">
+            <label class="form-label">Notes / Link</label>
+            <textarea class="form-control" name="notes" rows="2"
+                      placeholder="Amazon URL, colour, size, store…">{{ gift.notes or '' }}</textarea>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center">
+            <a href="{{ url_for('main.gifts_list') }}" class="btn btn-secondary">
+              <i class="bi bi-arrow-left me-1"></i>Cancel
+            </a>
+            <div class="d-flex gap-2">
+              {# Quick cycle status without leaving page #}
+              <form action="{{ url_for('main.toggle_gift_status', id=gift.id) }}" method="POST">
+                <button type="submit" class="btn btn-outline-secondary" title="Cycle status">
+                  <i class="bi bi-arrow-repeat me-1"></i>Cycle Status
+                </button>
+              </form>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>Save Changes
+              </button>
+            </div>
+          </div>
+
+        </form>
+      </div>
     </div>
+  </div>
 </div>
+
+<script>
+function previewEditUrl(input) {
+  var preview = document.getElementById('editImgPreview');
+  var img = document.getElementById('editImgPreviewImg');
+  if (input.value) {
+    img.src = input.value;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+</script>
 {% endblock %}

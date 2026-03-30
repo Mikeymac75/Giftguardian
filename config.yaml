@@ -1,8 +1,8 @@
 name: "GiftGuardian"
-version: "1.0.0"
+version: "1.1.0"
 slug: "giftguardian"
 description: "A personal gift tracker to manage ideas, purchases, and history."
-url: "https://github.com/home-assistant/addons"
+url: "https://github.com/mikeymac75/giftguardian"
 arch:
   - aarch64
   - amd64
@@ -13,9 +13,7 @@ startup: application
 boot: auto
 init: false
 map:
-  - config:rw
-  - share:rw
-  - media:rw
+  - data:rw
 options: {}
 schema: {}
 ingress: true
