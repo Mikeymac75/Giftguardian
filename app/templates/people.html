@@ -1,103 +1,160 @@
 {% extends 'base.html' %}
+{% set avatar_colors = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f97316','#eab308','#22c55e','#06b6d4'] %}
+{% set mn = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] %}
 
 {% block content %}
-<div class="row mb-3">
-    <div class="col">
-        <h2>People</h2>
-    </div>
-    <div class="col text-end">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPersonModal">
-            <i class="bi bi-person-plus-fill"></i> Add Person
-        </button>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0"><i class="bi bi-people-fill me-2"></i>People</h2>
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPersonModal">
+    <i class="bi bi-person-plus-fill me-1"></i>Add Person
+  </button>
 </div>
 
-<div class="row">
-    {% for person in people %}
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">{{ person.name }}</h5>
-                <h6 class="card-subtitle mb-2 text-muted">
-                    {% if person.relation %}
-                        {{ person.relation.name }}
-                    {% else %}
-                        Unspecified Relation
-                    {% endif %}
-                </h6>
-                <p class="card-text">
-                    <i class="bi bi-calendar-event"></i>
-                    {{ person.birthday_month }}/{{ person.birthday_day }}
-                    {% if person.birthday_year %}/{{ person.birthday_year }}{% endif %}
-                </p>
-                <a href="{{ url_for('main.person_profile', id=person.id) }}" class="btn btn-sm btn-info text-white">View Profile</a>
-                <a href="{{ url_for('main.edit_person', id=person.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                <form action="{{ url_for('main.delete_person', id=person.id) }}" method="POST" style="display:inline;">
-                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete {{ person.name }}?')">Delete</button>
-                </form>
+{% if people_data %}
+<div class="row g-3">
+  {% for pd in people_data %}
+  {% set person = pd.person %}
+  <div class="col-md-4 col-sm-6">
+    <div class="card h-100 {% if pd.days_until <= 7 %}gift-card-idea{% endif %}">
+      <div class="card-body">
+
+        {# Header row: avatar + name #}
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="avatar-circle" style="background:{{ avatar_colors[person.id % 8] }}">
+            {{ person.name[:2]|upper }}
+          </div>
+          <div>
+            <h5 class="mb-0 fw-semibold">{{ person.name }}</h5>
+            <div class="text-muted small">
+              {{ person.relation.name if person.relation else 'No relation' }}
             </div>
+          </div>
         </div>
+
+        {# Birthday row #}
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small"><i class="bi bi-cake2 me-1"></i>
+            {{ mn[person.birthday_month] }} {{ person.birthday_day }}
+            {% if person.birthday_year %} · {{ person.birthday_year }}{% endif %}
+          </span>
+          {% if pd.age %}
+          <span class="badge bg-secondary">Turning {{ pd.age }}</span>
+          {% endif %}
+        </div>
+
+        {# Birthday countdown #}
+        <div class="mb-3">
+          {% if pd.days_until == 0 %}
+            <span class="badge bg-danger"><i class="bi bi-cake2-fill me-1"></i>Birthday Today!</span>
+          {% elif pd.days_until <= 7 %}
+            <span class="badge bg-danger">Birthday in {{ pd.days_until }} day{{ 's' if pd.days_until != 1 else '' }}</span>
+          {% elif pd.days_until <= 30 %}
+            <span class="badge bg-warning text-dark">Birthday in {{ pd.days_until }} days</span>
+          {% else %}
+            <span class="text-muted small">Next birthday: {{ mn[pd.next_bday.month] }} {{ pd.next_bday.day }}</span>
+          {% endif %}
+          <span class="badge bg-dark ms-1" title="Gifts tracked">
+            <i class="bi bi-gift me-1"></i>{{ pd.gift_count }}
+          </span>
+        </div>
+
+        {# Actions #}
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{{ url_for('main.person_profile', id=person.id) }}" class="btn btn-sm btn-info text-white flex-fill">
+            <i class="bi bi-person-lines-fill me-1"></i>Profile
+          </a>
+          <a href="{{ url_for('main.gifts_list', person_id=person.id) }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-gift"></i>
+          </a>
+          <a href="{{ url_for('main.edit_person', id=person.id) }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-pencil"></i>
+          </a>
+          <form action="{{ url_for('main.delete_person', id=person.id) }}" method="POST" class="d-inline">
+            <button type="submit" class="btn btn-sm btn-outline-danger"
+                    onclick="return confirm('Delete {{ person.name }}? Their gift history will also be removed.')">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </div>
+
+      </div>
     </div>
-    {% else %}
-    <div class="col">
-        <p class="text-muted">No people added yet.</p>
-    </div>
-    {% endfor %}
+  </div>
+  {% endfor %}
 </div>
 
-<!-- Add Person Modal -->
+{% else %}
+<div class="card text-center py-5">
+  <div class="card-body">
+    <i class="bi bi-people fs-1 d-block mb-3 opacity-25"></i>
+    <h5>No people added yet</h5>
+    <p class="text-muted">Add family and friends to start tracking gifts.</p>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPersonModal">
+      <i class="bi bi-person-plus-fill me-1"></i>Add First Person
+    </button>
+  </div>
+</div>
+{% endif %}
+
+
+{# ── Add Person Modal ── #}
 <div class="modal fade" id="addPersonModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add New Person</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-person-plus-fill me-2"></i>Add New Person</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('main.add_person') }}" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" name="name" required placeholder="Full name">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Relation</label>
+            <select class="form-select" name="relation_id" required>
+              <option value="" selected disabled>Choose…</option>
+              {% for relation in relations %}
+              <option value="{{ relation.id }}">{{ relation.name }}</option>
+              {% endfor %}
+            </select>
+            {% if not relations %}
+            <div class="form-text text-warning"><i class="bi bi-exclamation-triangle me-1"></i>
+              No relations defined. <a href="{{ url_for('main.settings') }}">Add one in Settings first.</a>
             </div>
-            <form action="{{ url_for('main.add_person') }}" method="POST">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="name" class="form-label">Name</label>
-                        <input type="text" class="form-control" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="relation_id" class="form-label">Relation</label>
-                        <select class="form-select" name="relation_id" required>
-                            <option value="" selected disabled>Choose...</option>
-                            {% for relation in relations %}
-                                <option value="{{ relation.id }}">{{ relation.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <div class="form-text">Don't see the relation? Add it in Settings.</div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="month" class="form-label">Month</label>
-                            <select class="form-select" name="month" required>
-                                {% for m in range(1, 13) %}
-                                <option value="{{ m }}">{{ m }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="day" class="form-label">Day</label>
-                            <select class="form-select" name="day" required>
-                                {% for d in range(1, 32) %}
-                                <option value="{{ d }}">{{ d }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="year" class="form-label">Year (Optional)</label>
-                            <input type="number" class="form-control" name="year" placeholder="YYYY" min="1900" max="2100">
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Save Person</button>
-                </div>
-            </form>
+            {% else %}
+            <div class="form-text">Don't see it? Add it in Settings.</div>
+            {% endif %}
+          </div>
+          <label class="form-label">Birthday</label>
+          <div class="row g-2">
+            <div class="col-5">
+              <select class="form-select" name="month" required>
+                {% for m in range(1, 13) %}
+                <option value="{{ m }}">{{ month_names[m] }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-3">
+              <select class="form-select" name="day" required>
+                {% for d in range(1, 32) %}
+                <option value="{{ d }}">{{ d }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-4">
+              <input type="number" class="form-control" name="year" placeholder="Year" min="1900" max="2100">
+            </div>
+          </div>
+          <div class="form-text">Year is optional — used to show age.</div>
         </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Person</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 {% endblock %}

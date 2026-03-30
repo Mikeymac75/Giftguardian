@@ -1,0 +1,12 @@
+services:
+  giftguardian:
+    build: .
+    container_name: giftguardian
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - giftguardian_data:/data
+
+volumes:
+  giftguardian_data:

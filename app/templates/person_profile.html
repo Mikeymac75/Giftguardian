@@ -1,135 +1,311 @@
 {% extends 'base.html' %}
+{% set avatar_colors = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f97316','#eab308','#22c55e','#06b6d4'] %}
+{% set mn = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] %}
 
 {% block content %}
-<div class="row mb-3">
-    <div class="col">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.people_list') }}">People</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ person.name }}</li>
-            </ol>
-        </nav>
-        <h2>{{ person.name }}'s Profile</h2>
-    </div>
-</div>
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('main.people_list') }}">People</a></li>
+    <li class="breadcrumb-item active">{{ person.name }}</li>
+  </ol>
+</nav>
 
-<div class="row">
-    <div class="col-md-4 mb-4">
-        <div class="card">
-            <div class="card-header">
-                Details
-            </div>
-            <div class="card-body">
-                <h5 class="card-title">{{ person.name }}</h5>
-                <h6 class="card-subtitle mb-2 text-muted">
-                    {% if person.relation %}{{ person.relation.name }}{% else %}Unspecified{% endif %}
-                </h6>
-                <p class="card-text">
-                    <strong>Birthday:</strong>
-                    {{ person.birthday_month }}/{{ person.birthday_day }}
-                    {% if person.birthday_year %}/{{ person.birthday_year }}{% endif %}
-                </p>
-                <a href="{{ url_for('main.edit_person', id=person.id) }}" class="btn btn-primary w-100">Edit Details</a>
-            </div>
+<div class="row g-4">
+
+  {# ── Left: Person details + occasions ── #}
+  <div class="col-md-4">
+
+    {# Details card #}
+    <div class="card mb-3">
+      <div class="card-body text-center py-4">
+        <div class="avatar-circle mx-auto mb-3" style="width:72px;height:72px;font-size:1.6rem;background:{{ avatar_colors[person.id % 8] }}">
+          {{ person.name[:2]|upper }}
         </div>
+        <h4 class="fw-bold mb-1">{{ person.name }}</h4>
+        <div class="text-muted mb-3">{{ person.relation.name if person.relation else 'No relation' }}</div>
+
+        <div class="d-flex justify-content-center gap-3 mb-3 text-muted small">
+          <span><i class="bi bi-cake2 me-1"></i>
+            {{ mn[person.birthday_month] }} {{ person.birthday_day }}
+            {% if person.birthday_year %}, {{ person.birthday_year }}{% endif %}
+          </span>
+          {% if age %}<span>· Age {{ age }}</span>{% endif %}
+        </div>
+
+        {# Birthday countdown #}
+        {% if days_until == 0 %}
+          <div class="alert alert-danger py-2 mb-3"><i class="bi bi-cake2-fill me-1"></i><strong>Birthday is Today!</strong></div>
+        {% elif days_until <= 7 %}
+          <div class="alert alert-danger py-2 mb-3">Birthday in <strong>{{ days_until }} day{{ 's' if days_until != 1 else '' }}</strong></div>
+        {% elif days_until <= 30 %}
+          <div class="alert alert-warning py-2 mb-3 text-dark">Birthday in <strong>{{ days_until }} days</strong></div>
+        {% else %}
+          <div class="text-muted small mb-3">Next birthday: {{ mn[next_bday.month] }} {{ next_bday.day }}, {{ next_bday.year }}</div>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('main.edit_person', id=person.id) }}" class="btn btn-outline-primary flex-fill">
+            <i class="bi bi-pencil me-1"></i>Edit
+          </a>
+          <a href="{{ url_for('main.gifts_list', person_id=person.id) }}" class="btn btn-outline-secondary flex-fill">
+            <i class="bi bi-gift me-1"></i>All Gifts
+          </a>
+        </div>
+      </div>
     </div>
 
-    <div class="col-md-8">
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Special Occasions</span>
-                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addOccasionModal">
-                    <i class="bi bi-plus-lg"></i> Add Occasion
+    {# Occasions card #}
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-calendar-heart me-2"></i>Occasions</span>
+        <button type="button" class="btn btn-sm btn-outline-success"
+                data-bs-toggle="modal" data-bs-target="#addOccasionModal">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+      </div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">Birthday</div>
+            <div class="text-muted small">{{ mn[person.birthday_month] }} {{ person.birthday_day }}</div>
+          </div>
+          <span class="badge bg-secondary">Core</span>
+        </li>
+        {% for occ in person.occasions %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">{{ occ.occasion.name }}</div>
+            <div class="text-muted small">{{ mn[occ.month] }} {{ occ.day }}{% if occ.year %}, {{ occ.year }}{% endif %}</div>
+          </div>
+          <form action="{{ url_for('main.delete_person_occasion', id=occ.id) }}" method="POST" class="d-inline">
+            <button type="submit" class="btn btn-sm btn-outline-danger"
+                    onclick="return confirm('Remove this occasion?')">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </li>
+        {% endfor %}
+        {% if not person.occasions %}
+        <li class="list-group-item text-muted small">No extra occasions. Add anniversaries, name days, etc.</li>
+        {% endif %}
+      </ul>
+    </div>
+
+  </div>
+
+  {# ── Right: Gift history ── #}
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-clock-history me-2"></i>Gift History</span>
+        <button type="button" class="btn btn-sm btn-primary"
+                data-bs-toggle="modal" data-bs-target="#addGiftFromProfileModal">
+          <i class="bi bi-plus-lg me-1"></i>Add Gift
+        </button>
+      </div>
+
+      {% if sorted_years %}
+        {% for year_key in sorted_years %}
+        {% set year_gifts = gifts_by_year[year_key] %}
+        <div class="px-3 pt-3 pb-1">
+          <h6 class="text-muted text-uppercase small fw-bold letter-spacing-1 border-bottom pb-1">
+            {{ year_key }}
+            <span class="badge bg-dark ms-1">{{ year_gifts | length }}</span>
+            <span class="text-muted ms-2" style="font-weight:normal;">
+              ${{ "%.0f"|format(year_gifts | selectattr('price') | sum(attribute='price')) }}
+            </span>
+          </h6>
+        </div>
+        <div class="px-3">
+          {% for gift in year_gifts %}
+          <div class="d-flex align-items-center gap-3 py-2 border-bottom border-secondary border-opacity-25">
+
+            {# Thumbnail #}
+            <div style="width:48px;height:48px;flex-shrink:0;border-radius:8px;overflow:hidden;">
+              {% if gift.image_path %}
+              <img src="{{ url_for('main.uploaded_file', filename=gift.image_path) }}"
+                   style="width:100%;height:100%;object-fit:cover;" alt="">
+              {% elif gift.image_url %}
+              <img src="{{ gift.image_url }}" style="width:100%;height:100%;object-fit:cover;"
+                   alt="" onerror="this.style.display='none'">
+              {% else %}
+              <div class="gift-img-placeholder" style="width:48px;height:48px;border-radius:8px;">
+                <i class="bi bi-gift"></i>
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="flex-grow-1 min-width-0">
+              <div class="fw-semibold text-truncate">{{ gift.item_name }}</div>
+              <div class="text-muted small">
+                {{ gift.occasion.name if gift.occasion else 'General' }}
+                {% if gift.notes %}
+                  · <span class="text-truncate">{{ gift.notes[:60] }}{% if gift.notes|length > 60 %}…{% endif %}</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="text-end flex-shrink-0">
+              {% if gift.status == 'Idea' %}
+                <span class="badge badge-idea">Idea</span>
+              {% elif gift.status == 'Bought' %}
+                <span class="badge badge-bought">Bought</span>
+              {% else %}
+                <span class="badge badge-given">Given</span>
+              {% endif %}
+              {% if gift.price %}
+              <div class="text-muted small">${{ "%.2f"|format(gift.price) }}</div>
+              {% endif %}
+            </div>
+
+            <div class="flex-shrink-0 d-flex gap-1">
+              <form action="{{ url_for('main.toggle_gift_status', id=gift.id) }}" method="POST">
+                <button type="submit" class="btn btn-outline-secondary btn-sm py-0 px-2"
+                        style="font-size:0.7rem;" title="Cycle status">
+                  <i class="bi bi-arrow-repeat"></i>
                 </button>
+              </form>
+              <a href="{{ url_for('main.edit_gift', id=gift.id) }}"
+                 class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size:0.7rem;" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </a>
             </div>
-            <ul class="list-group list-group-flush">
-                <!-- Always show Birthday as the primary occasion -->
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>Birthday</strong>
-                        <div class="text-muted small">
-                            {{ person.birthday_month }}/{{ person.birthday_day }}
-                            {% if person.birthday_year %}/{{ person.birthday_year }}{% endif %}
-                        </div>
-                    </div>
-                    <span class="badge bg-secondary rounded-pill">Core</span>
-                </li>
-
-                {% for occ in person.occasions %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>{{ occ.occasion.name }}</strong>
-                        <div class="text-muted small">
-                            {{ occ.month }}/{{ occ.day }}
-                            {% if occ.year %}/{{ occ.year }}{% endif %}
-                        </div>
-                    </div>
-                    <form action="{{ url_for('main.delete_person_occasion', id=occ.id) }}" method="POST" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this date?')">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </form>
-                </li>
-                {% endfor %}
-            </ul>
-            {% if not person.occasions %}
-            <div class="card-body text-muted small">
-                No other occasions added yet. Add Anniversaries, Name Days, etc.
-            </div>
-            {% endif %}
+          </div>
+          {% endfor %}
         </div>
+        {% endfor %}
+        <div class="p-3 text-muted small text-end border-top">
+          Total across all years:
+          <strong>${{ "%.2f"|format(gifts_by_year.values() | sum(attribute='0') | float) }}</strong>
+        </div>
+      {% else %}
+      <div class="card-body text-center py-5 text-muted">
+        <i class="bi bi-gift fs-2 d-block mb-2 opacity-25"></i>
+        No gifts tracked for {{ person.name }} yet.
+        <div class="mt-2">
+          <button type="button" class="btn btn-sm btn-primary"
+                  data-bs-toggle="modal" data-bs-target="#addGiftFromProfileModal">
+            Add First Gift
+          </button>
+        </div>
+      </div>
+      {% endif %}
     </div>
+  </div>
+
 </div>
 
-<!-- Add Occasion Modal -->
+
+{# ── Add Occasion Modal ── #}
 <div class="modal fade" id="addOccasionModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add Occasion Date</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Occasion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('main.add_person_occasion', id=person.id) }}" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Occasion Type</label>
+            <select class="form-select" name="occasion_id" required>
+              <option value="" selected disabled>Choose…</option>
+              {% for occ in occasions %}
+              <option value="{{ occ.id }}">{{ occ.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Don't see it? Add it in Settings.</div>
+          </div>
+          <label class="form-label">Date</label>
+          <div class="row g-2">
+            <div class="col-5">
+              <select class="form-select" name="month" required>
+                {% for m in range(1, 13) %}
+                <option value="{{ m }}">{{ month_names[m] }}</option>
+                {% endfor %}
+              </select>
             </div>
-            <form action="{{ url_for('main.add_person_occasion', id=person.id) }}" method="POST">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="occasion_id" class="form-label">Occasion Type</label>
-                        <select class="form-select" name="occasion_id" required>
-                            <option value="" selected disabled>Choose...</option>
-                            {% for occ in occasions %}
-                                <option value="{{ occ.id }}">{{ occ.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <div class="form-text">Don't see the type? Add it in Settings.</div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="month" class="form-label">Month</label>
-                            <select class="form-select" name="month" required>
-                                {% for m in range(1, 13) %}
-                                <option value="{{ m }}">{{ m }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="day" class="form-label">Day</label>
-                            <select class="form-select" name="day" required>
-                                {% for d in range(1, 32) %}
-                                <option value="{{ d }}">{{ d }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="year" class="form-label">Year (Opt)</label>
-                            <input type="number" class="form-control" name="year" placeholder="YYYY">
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Save Date</button>
-                </div>
-            </form>
+            <div class="col-3">
+              <select class="form-select" name="day" required>
+                {% for d in range(1, 32) %}
+                <option value="{{ d }}">{{ d }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-4">
+              <input type="number" class="form-control" name="year" placeholder="Year (opt)">
+            </div>
+          </div>
         </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Occasion</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
+
+
+{# ── Add Gift from Profile Modal ── #}
+{% set all_occasions = occasions %}
+<div class="modal fade" id="addGiftFromProfileModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-gift-fill me-2"></i>Add Gift for {{ person.name }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('main.add_gift') }}" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="person_id" value="{{ person.id }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Item Name</label>
+            <input type="text" class="form-control" name="item_name" required placeholder="What is the gift?">
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">Occasion</label>
+              <select class="form-select" name="occasion_id">
+                <option value="">General</option>
+                {% for occ in all_occasions %}
+                <option value="{{ occ.id }}">{{ occ.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-3">
+              <label class="form-label">Price ($)</label>
+              <input type="number" step="0.01" class="form-control" name="price" placeholder="0.00">
+            </div>
+            <div class="col-3">
+              <label class="form-label">Year</label>
+              <input type="number" class="form-control" name="year">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select class="form-select" name="status">
+              <option value="Idea">Idea</option>
+              <option value="Bought">Bought</option>
+              <option value="Given">Given</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Image URL <span class="text-muted">(optional)</span></label>
+            <input type="url" class="form-control" name="image_url" placeholder="https://…">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Notes / Link</label>
+            <textarea class="form-control" name="notes" rows="2" placeholder="Amazon link, size, colour…"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Gift</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

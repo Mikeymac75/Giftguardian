@@ -5,38 +5,130 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>GiftGuardian</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
-      body { padding-top: 20px; }
-      .card { margin-bottom: 20px; }
+      :root {
+        --gg-idea:   #0dcaf0;
+        --gg-bought: #ffc107;
+        --gg-given:  #198754;
+        --gg-card-shadow: 0 2px 10px rgba(0,0,0,0.35);
+      }
+
+      body {
+        padding-top: 16px;
+        background-color: #0f1117;
+      }
+
+      /* ── Navbar ── */
+      .navbar-brand { font-weight: 700; letter-spacing: 0.02em; }
+      .navbar { box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+
+      /* ── Cards ── */
+      .card {
+        margin-bottom: 20px;
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: var(--gg-card-shadow);
+      }
+      .card-header { border-bottom: 1px solid rgba(255,255,255,0.1); }
+
+      /* ── Gift status border accent ── */
+      .gift-card-idea   { border-left: 4px solid var(--gg-idea)   !important; }
+      .gift-card-bought { border-left: 4px solid var(--gg-bought) !important; }
+      .gift-card-given  { border-left: 4px solid var(--gg-given)  !important; }
+
+      /* ── Avatar circle for initials ── */
+      .avatar-circle {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+        letter-spacing: 0.05em;
+      }
+      .avatar-sm {
+        width: 36px;
+        height: 36px;
+        font-size: 0.8rem;
+      }
+
+      /* ── Urgency left-border on list items ── */
+      .urgency-danger  { border-left: 3px solid var(--bs-danger)  !important; }
+      .urgency-warning { border-left: 3px solid var(--bs-warning) !important; }
+
+      /* ── Gift image placeholder ── */
+      .gift-img-placeholder {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: rgba(255,255,255,0.05);
+        color: rgba(255,255,255,0.2);
+      }
+
+      /* ── Status badge colours ── */
+      .badge-idea   { background-color: var(--gg-idea);   color: #000; }
+      .badge-bought { background-color: var(--gg-bought); color: #000; }
+      .badge-given  { background-color: var(--gg-given);  color: #fff; }
+
+      /* ── Misc ── */
+      .text-truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .btn-status-cycle { font-size: 0.7rem; padding: 2px 8px; }
+      .pool-badge { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
     </style>
   </head>
   <body>
-    <div class="container">
-      <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 rounded">
+    <div class="container-lg">
+
+      <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 rounded-3 px-3">
         <div class="container-fluid">
-          <a class="navbar-brand" href="{{ url_for('main.index') }}"><i class="bi bi-gift-fill"></i> GiftGuardian</a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <a class="navbar-brand" href="{{ url_for('main.index') }}">
+            <i class="bi bi-gift-fill me-1"></i>GiftGuardian
+          </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
               <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('main.index') }}">Dashboard</a>
+                <a class="nav-link {% if request.endpoint == 'main.index' %}active fw-semibold{% endif %}"
+                   href="{{ url_for('main.index') }}">
+                  <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('main.people_list') }}">People</a>
+                <a class="nav-link {% if 'people' in request.endpoint %}active fw-semibold{% endif %}"
+                   href="{{ url_for('main.people_list') }}">
+                  <i class="bi bi-people-fill me-1"></i>People
+                </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('main.gifts_list') }}">Gifts</a>
+                <a class="nav-link {% if 'gift' in request.endpoint and 'stats' not in request.endpoint %}active fw-semibold{% endif %}"
+                   href="{{ url_for('main.gifts_list') }}">
+                  <i class="bi bi-gift me-1"></i>Gifts
+                </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('main.stats') }}">Statistics</a>
+                <a class="nav-link {% if request.endpoint == 'main.stats' %}active fw-semibold{% endif %}"
+                   href="{{ url_for('main.stats') }}">
+                  <i class="bi bi-bar-chart-fill me-1"></i>Statistics
+                </a>
               </li>
             </ul>
             <ul class="navbar-nav">
-               <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('main.settings') }}"><i class="bi bi-gear"></i> Settings</a>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'main.settings' %}active fw-semibold{% endif %}"
+                   href="{{ url_for('main.settings') }}">
+                  <i class="bi bi-gear-fill me-1"></i>Settings
+                </a>
               </li>
             </ul>
           </div>
@@ -55,6 +147,7 @@
       {% endwith %}
 
       {% block content %}{% endblock %}
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
